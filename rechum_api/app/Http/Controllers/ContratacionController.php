@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Contratacion;
 use App\Models\Personal;
 
@@ -75,23 +76,35 @@ class ContratacionController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        // recuperar los valores recibidos
-        $params = $request->all();
-        // busco en la BD
-        $contrato = Contratacion::findOrFail($id);
-        $personal = Personal::findOrFail($contrato->rfc);
-        if(isset($params['status']) && $params['status'] === 'NUEVO') {
-            $params['status'] = 'ACTIVO';
-        }
-        //actualizar los valores en la BD
-        $contrato->update($params);
-        if(isset($params['status']) && ($params['status'] === 'ACTIVO' || $params['status'] === 'BAJA' )) {
-            // actualiza el status de la persona
-            $personal->status = $params['status'];
-            $personal->save();
-        }
-        // regresar una respuesta
-        return response()->json($contrato);
+        DB::transaction(function() use ($request, $id) {
+            // recuperar los valores recibidos
+            $params = $request->all();
+            // busco en la BD
+            $contrato = Contratacion::findOrFail($id);
+            $personal = Personal::findOrFail($contrato->rfc);
+            if(isset($params['status']) && $params['status'] === 'NUEVO') {
+                $params['status'] = 'ACTIVO';
+            }
+            //actualizar los valores en la BD
+            $contrato->update($params);
+            if(isset($params['status']) && ($params['status'] === 'ACTIVO' || $params['status'] === 'BAJA' )) {
+                // actualiza el status de la persona
+                $personal->status = $params['status'];
+                if($params['status']==='BAJA'){
+                    // termina el puesto actual, si es que esta activo
+                    if(isSet($contrato->puesto)){
+                        if($contrato->puesto->status === 'ACTIVO') {
+                            $contrato->puesto->status = 'BAJA';
+                            $contrato->puesto->fecha_baja = $contrato->fecha_baja;
+                            $contrato->puesto->save();
+                        }
+                    }
+                }
+                $personal->save();
+            }
+            // regresar una respuesta
+            return response()->json($contrato);
+        });
     }
 
     /**

@@ -31,7 +31,7 @@ nav.navbar.is-fixed-top.is-dark(role="navigation" aria-label="main navigation")
             RouterLink.navbar-item(to="/login") 
                 span.icon
                     span.material-icons logout
-                span Salir
+                span Cerrar sesión
 </template>
 <style>
 

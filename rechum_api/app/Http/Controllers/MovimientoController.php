@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Movimiento;
+use App\Models\Contratacion;
 
 class MovimientoController extends Controller
 {
@@ -32,7 +33,18 @@ class MovimientoController extends Controller
         $params = $request->input('movimiento');
         $params['funcion'] = strtoupper($params['funcion']);
         $movimiento = Movimiento::create($params);
+        $actuales = Movimiento::where('contratacion_id', $movimiento->contratacion_id)->where('actual', 1)->get();
+        // se desactiva el puesto actual anterior
+        foreach($actuales as $mov) {
+            $mov->actual = false;
+            $mov->save();
+        }
         $movimiento->save();
+        if( $movimiento->status === 'NUEVO' ) {
+            $movimiento->status = 'ACTIVO';
+            $movimiento->actual = true;
+            $movimiento->save();
+        }
         return response()->json($movimiento);
 
     }
@@ -71,5 +83,8 @@ class MovimientoController extends Controller
     public function destroy(string $id)
     {
         //
+        $movimiento = Movimiento::findOrFail($id);
+        $movimiento->delete();
+        return response()->json($movimiento);
     }
 }

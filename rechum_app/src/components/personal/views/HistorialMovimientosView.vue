@@ -27,7 +27,7 @@ div
 
     //- listado de contrataciones
     .card.is-radiusless(v-if="personal.contrataciones.length>0" v-for="contratacion in personal.contrataciones")
-        .card-header.has-background-light.is-radiusless
+        .card-header.has-background-grey-lighter.is-radiusless
             p.card-header-title(@click="toggleCard(contratacion.id)")
                 | {{ contratacion.tipo_contratacion }}&nbsp;
                 .tags
@@ -64,18 +64,18 @@ div
             hr
             .is-pulled-right
                 .field.is-grouped
-                    p.control(v-if="personal.contratacion && personal.contratacion.id === contratacion.id && personal.contratacion.puesto && personal.contratacion.puesto.status === 'ACTIVO'")
+                    p.control(@click="toggleMovimientoForm(contratacion.id, 'baja', personal.contratacion? personal.contratacion.puesto.id: 0)" v-if="personal.contratacion && personal.contratacion.id === contratacion.id && personal.contratacion.puesto && personal.contratacion.puesto.status === 'ACTIVO'")
                         button.button.is-danger.is-outlined(title="Realizar baja del puesto actual")
                             span.icon
                                 span.material-icons playlist_remove
                             span Baja puesto actual
                     p.control(v-else)
-                        button.button.is-primary.is-outlined(title="Registrar nuevo puesto como actual" v-if = "contratacion.actual && !contratacion.fecha_baja")
+                        button.button.is-primary.is-outlined(title="Registrar nuevo movimiento" v-if = "contratacion.actual && !contratacion.fecha_baja" @click="toggleMovimientoForm(contratacion.id, 'nuevo')")
                             span.icon
                                 span.material-icons add
                             span Nuevo movimiento
                     p.control
-                        button.button.is-info.is-outlined(title="Agregar puesto al historial" @click="addHistorialPuesto(contratacion.id)")
+                        button.button.is-info.is-outlined(title="Agregar puesto al historial" @click="toggleMovimientoForm(contratacion.id, 'historial')")
                             span.icon
                                 span.material-icons playlist_add
                             span Historial
@@ -112,9 +112,13 @@ div
                             strong Hasta
                             span : {{ mov.fecha_baja? mov.fecha_baja : '-' }}
                         td
-                            button.button.is-small.is-white.ml-4(@click="editMovimiento(mov)" title="Editar puesto")
+                            button.button.is-small.is-white.ml-4(@click="toggleMovimientoForm(mov.contratacion_id, 'editar', mov.id)" title="Editar puesto")
                                 span.icon.has-text-info
                                     span.material-icons edit
+                                    p.control
+                            button.button.is-small.is-white.ml-4(@click="deleteMovimiento(mov.id)" title="Eliminar puesto" v-if="mov.status!=='ACTIVO'")
+                                span.icon.has-text-danger
+                                    span.material-icons delete
                                     p.control                               
                 
             .notification.is-warning.is-light.has-text-centered(v-if="contratacion.movimientos.length === 0")
@@ -131,7 +135,8 @@ div
                         span.material-icons person_remove
                     span Eliminar registro
 
-    //- Modals para modificar
+    //- ********** MODALS PARA MODIFICAR **********
+
     //- modal contratacion
     form(@submit="guardarContratacion")
         ModalCard(v-model:isOpen="modalContratacionIsOpen"  modal-class='width-1000')
@@ -159,7 +164,7 @@ div
                     .columns
                         LayoutControl(label="Tipo de contratación*" v-if="!contratacion.id")
                             .select
-                                select(required v-model="contratacion.tipo_contratacion" :disabled="props.editMode" @change="contratacion.interinato = false")
+                                select(required v-model="contratacion.tipo_contratacion" :disabled="props.MovimientoEditMode" @change="contratacion.interinato = false")
                                     option(v-for="_tc in catalogos.tipo_contratacion" :value="_tc.key") {{ _tc.value }}
                         LayoutControl(label="Número de empleado" extraClass="is-4")
                             input.input(type="text" v-model="contratacion.numero_empleado")
@@ -175,55 +180,56 @@ div
                 button.button.is-primary(type="submit" :class="{'is-loading':isSaving}")
                     span.icon
                         span.material-icons-outlined save
-                    span {{ contratacion.id ? contratacion.status === 'BAJA' ? 'Registrar baja' : 'Actualizar' : 'Registrar' }}
+                    span {{ textBtnGuardarContratacion }}
                 button.button.is-danger.ml-1(type="button" @click="toggleContratacionForm('close')" :disabled="isSaving")
                     span.icon
                         span.material-icons-outlined close
                     span Cancelar
 
     //- modal Movimiento
-    ModalCard(v-model:isOpen="modalMovimientoIsOpen" modal-class='width-1000')
-        template(#modal-title)
-            span {{editMode ? 'Editar' : 'Registrar'}} movimiento {{ movimiento.status === 'HISTORICO'? 'histórico' : (movimiento.status === 'ACTIVO'? 'actual' : '') }}
-        template(#modal-body)
-            .message.is-info(v-if="_contratacion")
-                .message-body
-                    h5.title.is-5 Contratación
-                    .columns
-                        .column
-                            p Tipo de contratación:
-                            b {{ _contratacion.tipo_contratacion }}
-                        .column
-                            p Núm. empleado:
-                            b {{ _contratacion.numero_empleado }}
-            .columns
-                LayoutControl(label="Fecha de inicio*" extraClass="is-6")
-                    input.input(type="date" required v-model="movimiento.fecha_inicio")
-                LayoutControl(label="Fecha de baja*" v-if="movimiento.status === 'HISTORICO'" extraClass="is-6")
-                    input.input(type="date" required v-model="movimiento.fecha_baja")
-            .columns 
-                LayoutControl(label="Adscripción*")
-                    .select
-                        select(required v-model="movimiento.adscripcion_id")
-                            option(v-for="_ad in catalogos.adscripciones" :value="_ad.id") {{ _ad.unidad_administrativa }} - {{ _ad.adscripcion }}
-            .columns(v-if="_contratacion && (_contratacion.tipo_contratacion==='BASE' || _contratacion.tipo_contratacion === 'CONFIANZA')")
-                LayoutControl(label="Puesto*")
-                    .select
-                        select(required v-model="movimiento.codigo_plaza")
-                            option(v-for="_pl in catalogos.plazas" :value="_pl.codigo_plaza") {{ _pl.codigo_plaza }} - {{ _pl.descripcion }}
-            .columns
-                LayoutControl(label="Función*")
-                    input.input(type="text" v-model="movimiento.funcion" placeholder="Función real, actividad que desempleña o puesto")
-            | {{ movimiento }}
-        template(#modal-foot)
-            button.button.is-primary(type="submit" :class="{'is-loading':isSaving}")
-                span.icon
-                    span.material-icons-outlined save
-                span Guardar
-            button.button.is-danger.ml-1(type="button" @click="toggleForm" :disabled="isSaving")
-                span.icon
-                    span.material-icons-outlined close
-                span Cancelar
+    form(@submit="guardarMovimiento")
+        ModalCard(v-model:isOpen="modalMovimientoIsOpen" modal-class='width-1000')
+            template(#modal-title)
+                span {{ tituloModalMovimiento }}
+            template(#modal-body)
+                .message.is-info(v-if="_contratacion")
+                    .message-body
+                        h5.title.is-5 Contratación
+                        .columns
+                            .column
+                                p Tipo de contratación:
+                                b {{ _contratacion.tipo_contratacion }}
+                            .column
+                                p Núm. empleado:
+                                b {{ _contratacion.numero_empleado }}
+                .columns
+                    LayoutControl(label="Fecha de inicio*" extraClass="is-6")
+                        input.input(type="date" required v-model="movimiento.fecha_inicio")
+                    LayoutControl(label="Fecha de baja*" v-if="movimiento.status === 'HISTORIAL' || movimiento.status === 'BAJA'" extraClass="is-6")
+                        input.input(type="date" required v-model="movimiento.fecha_baja")
+                .columns 
+                    LayoutControl(label="Adscripción*")
+                        .select
+                            select(required v-model="movimiento.adscripcion_id")
+                                option(v-for="_ad in catalogos.adscripciones" :value="_ad.id") {{ _ad.unidad_administrativa }} - {{ _ad.adscripcion }}
+                .columns(v-if="_contratacion && (_contratacion.tipo_contratacion==='BASE' || _contratacion.tipo_contratacion === 'CONFIANZA')")
+                    LayoutControl(label="Puesto*")
+                        .select
+                            select(required v-model="movimiento.codigo_plaza")
+                                option(v-for="_pl in catalogos.plazas" :value="_pl.codigo_plaza") {{ _pl.codigo_plaza }} - {{ _pl.descripcion }}
+                .columns
+                    LayoutControl(label="Función*")
+                        input.input(type="text" v-model="movimiento.funcion" placeholder="Función real, actividad que desempleña o puesto")
+                | {{ movimiento }}
+            template(#modal-foot)
+                button.button.is-primary(type="submit" :class="{'is-loading':isSaving}")
+                    span.icon
+                        span.material-icons-outlined save
+                    span {{textBtnGuardarMovimiento }}
+                button.button.is-danger.ml-1(type="button" @click="toggleForm" :disabled="isSaving")
+                    span.icon
+                        span.material-icons-outlined close
+                    span Cancelar
     
 
 </template>
@@ -239,13 +245,18 @@ import { type Contratacion } from '@/types/Contratacion'
 import { type Movimiento } from '@/types/Movimiento'
 import{ type AxiosResponse } from 'axios'
 
-const modalBajaIsOpen = ref(false)
-const modalContratacionIsOpen = ref(false)
-const modalMovimientoIsOpen = ref(false)
-const editMode = ref(false)
 const selectedContratacion = ref(0)
-const baja = ref<Contratacion>({})
-const tituloModalContratacion = ref('')
+const modalContratacionIsOpen = ref(false)
+const ContratacionEditMode = ref(false)
+const tituloModalContratacion = ref('Editar')
+const textBtnGuardarContratacion = ref('Guardar')
+
+
+const selectedMovimiento = ref(0)
+const modalMovimientoIsOpen = ref(false)
+const MovimientoEditMode = ref(false)
+const tituloModalMovimiento = ref('Editar')
+const textBtnGuardarMovimiento = ref('Guardar')
 
 const cardVisible = ref(-1)
 let movimiento = ref<Movimiento>({})
@@ -269,9 +280,15 @@ const cardVisibleId = computed(() =>{
     return cardVisible.value === -1 && props.personal && props.personal!.contratacion? props.personal!.contratacion.id : cardVisible.value
 })
 
-const _contratacion = computed(()=> {
-    if(props.personal && props.personal!.contrataciones)
-        return props.personal!.contrataciones.find((c:Contratacion) => c.id === selectedContratacion.value)
+const _contratacion = computed<Contratacion>(()=> {
+    if(props.personal && props.personal.contrataciones)
+        return props.personal.contrataciones.find((c:Contratacion) => c.id === selectedContratacion.value)
+    return {}
+})
+
+const _movimiento = computed(() => {
+    if(_contratacion && _contratacion.value.movimientos)
+        return _contratacion.value.movimientos.find((m:Movimiento) => m.id === selectedMovimiento.value)
     return {}
 })
 
@@ -286,18 +303,45 @@ const catalogos = computed(() => {return useCatalogoStore().catalogos})
 
 const toggleForm = () => {
     modalMovimientoIsOpen.value = !modalMovimientoIsOpen.value
+    isSaving.value = false
 }
 
-const addHistorialPuesto = (id_contratacion:number) => {
-    editMode.value = false
-    // se crea el nuevo movimiento
-    selectedContratacion.value = id_contratacion
-    movimiento.value = {id_contratacion:id_contratacion, status:'HISTORICO'}
+const toggleMovimientoForm = (contratacion_id:number, mode:string, movId:number = 0) => {
+    MovimientoEditMode.value = mode === 'editar'
+    selectedContratacion.value = contratacion_id
+    selectedMovimiento.value = movId
+    movimiento.value = {..._movimiento.value}
+    clearMovimientoProps()
+    textBtnGuardarMovimiento.value = 'Registrar'
+    switch (mode) {
+        case 'nuevo':
+            tituloModalMovimiento.value = 'Registrar movimiento'
+            movimiento.value = {
+                contratacion_id:contratacion_id,
+                status:'NUEVO',
+                actual: _contratacion.value.status === 'ACTIVO' ? 1 :0
+            }
+            break
+        case 'historial':
+            tituloModalMovimiento.value = 'Agregar movimiento al historial'
+            movimiento.value = {contratacion_id:contratacion_id, status:'HISTORICO', actual: 0}
+            break
+        
+        case 'editar':
+            tituloModalMovimiento.value = 'Actualizar movimiento'
+            textBtnGuardarMovimiento.value = 'Guardar cambios'
+            break
+        case 'baja':
+            tituloModalMovimiento.value = 'Finalizar puesto'
+            movimiento.value.status = 'BAJA'
+            textBtnGuardarMovimiento.value = 'Registrar baja'
+            break
+    }
     toggleForm()
 }
 
 const editMovimiento =  (mov:object):void => {
-    editMode.value = true
+    MovimientoEditMode.value = true
     movimiento.value = {...mov}
     toggleForm()
 }
@@ -306,25 +350,25 @@ const persistMov = async (id:number, params:object) => {
     const query = id? http!.patch('movimiento/'+id, params) : http!.post('movimiento/', params)
     await query.then(() => {
         toggleForm()
-                emit('updatePersonal')
+        emit('updatePersonal')
+
     })
 }
 
-const toggleBajaForm = () => {
-    modalBajaIsOpen.value = !modalBajaIsOpen.value
-    if(modalBajaIsOpen.value)
-        baja.value = {rfc: props.personal!.rfc}
-}
-const toggleContratacionForm = (mode: string, id_contratacion?: number) => {
+const toggleContratacionForm = (mode: string, contratacion_id:number = 0) => {
     modalContratacionIsOpen.value = !modalContratacionIsOpen.value
-    selectedContratacion.value = id_contratacion ? id_contratacion: 0
+    selectedContratacion.value = contratacion_id
+    contratacion.value = {..._contratacion.value}
+    textBtnGuardarContratacion.value = 'Registrar'
+    clearContratacionProps()
     // se define el modo para las contrataciones
+    ContratacionEditMode.value = false
     switch(mode){
         case 'baja':
             tituloModalContratacion.value = 'Baja de contratación actual'
-            contratacion.value = {..._contratacion.value}
-            contratacion.value!.status = 'BAJA'
-            clearContratacionProps()
+            contratacion.value.status = 'BAJA'
+            textBtnGuardarContratacion.value = 'Registrar baja'
+            
             break
         case 'nuevo':
             tituloModalContratacion.value = 'Registro de contratación'
@@ -344,8 +388,8 @@ const toggleContratacionForm = (mode: string, id_contratacion?: number) => {
             break
         case 'editar':
             tituloModalContratacion.value = 'Editar datos de la contratación'
-            contratacion.value = {..._contratacion.value}
-            clearContratacionProps()
+            ContratacionEditMode.value = true
+            textBtnGuardarContratacion.value = 'Guardar cambios'
             break
     }
 }
@@ -387,24 +431,32 @@ const clearContratacionProps = () => {
     delete contratacion.value.created_at
     delete contratacion.value.updated_at
 }
+
+const clearMovimientoProps = () => {
+    delete movimiento.value.plaza
+    delete movimiento.value.adscripcion
+    delete movimiento.value.created_at
+    delete movimiento.value.updated_at
+}
  
-const save = async (event:Event) => {
+const guardarMovimiento = async (event:Event) => {
     event.preventDefault()
     isSaving.value = true
     let params = {movimiento: movimiento.value} as {movimiento: Movimiento, anterior?:number}
-     let id = movimiento.value.id ? movimiento.value.id : 0
+    let id = movimiento.value.id ? movimiento.value.id : 0
     delete params.movimiento.id
-    //si está en modo edición
-    if(editMode.value){
-        persistMov(id, params)
-    } else {
-        // si se esta partiendo de un movimiento existente
-        // se debe terminar el puesto anterior y despues generar un nuevo registro
-        if(id) {
-            params.anterior = id
-            id = 0
-        } 
-        persistMov(id, params)
+    persistMov(id, params)
+}
+
+
+// metodos para eliminar
+
+const deletePersonal = async (rfc:string) => {
+    let response = await http!.delete('personal/'+rfc)
+    if(response.status === 200){
+        toast.success('Registro eliminado')
+        router.push({name: 'ListaPersonal'})
+        
     }
 }
 
@@ -415,45 +467,13 @@ const deleteContratacion = async (id:number) => {
         toast.success('Registro eliminado')
     }
 }
-const deletePersonal = async (rfc:string) => {
-    let response = await http!.delete('personal/'+rfc)
+
+const deleteMovimiento = async (id:number) => {
+    let response = await http!.delete('movimiento/'+id)
     if(response.status === 200){
+        emit('updatePersonal')
         toast.success('Registro eliminado')
-        router.push({name: 'ListaPersonal'})
-        
     }
 }
 
-watch(
-    movimiento,
-    () => {
-        if(movimiento.value.status === 'ACTIVO'){
-            if(props.personal!.actual){
-                // se inicializan los valores para cancelar el movimiento actual
-                _actual.fecha_baja = new Date().toJSON().slice(0, 10)
-                _actual.id = props.personal!.actual.id
-                _actual.actual = 0
-                movimiento.value.actual = 0 
-            } else {
-                _actual = reactive({})
-                movimiento.value.fecha_baja = null
-                movimiento.value.actual = 0
-            }
-        }
-    }
-)
-
-watch(
-    _actual,
-    () => {
-        if(_actual.fecha_baja){
-            const dateParts = (_actual.fecha_baja as string).split("-");
-            const date = new Date(Number(dateParts[0]), Number(dateParts[1]) - 1, Number(dateParts[2].substring(0,2)));
-            date.setDate(date.getDate() + 1)
-            movimiento.value.fecha_inicio = date.toJSON().slice(0, 10)
-            movimiento.value.actual = 1
-            _actual.id = props.personal!.actual.id
-        }
-    }
-)
 </script>
