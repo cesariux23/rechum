@@ -15,10 +15,10 @@ div
                             span.material-icons remove_circle
                         span Finalizar actual
                 p.control
-                    button.is-pulled-right.button.is-info(v-if="personal.contratacion && personal.contratacion.status === 'ACTIVO'" @click="toggleContratacionForm('historico')" title="Agregar historial contratación")
+                    button.is-pulled-right.button.is-info(v-if="personal.contratacion && personal.contratacion.status === 'ACTIVO'" @click="toggleContratacionForm('historico')" title="Agregar historico contratación")
                         span.icon
                             span.material-icons post_add
-                        span Agregar historial
+                        span Agregar historico
                 p.control
                 button.is-pulled-right.button.is-success(v-if="personal.contrataciones.length === 0 || (personal.contratacion && personal.contratacion.status === 'BAJA')" @click="toggleContratacionForm('nuevo')" title="Agregar contratación")
                         span.icon
@@ -31,19 +31,19 @@ div
             p.card-header-title(@click="toggleCard(contratacion.id)")
                 | {{ contratacion.tipo_contratacion }}&nbsp;
                 .tags
-                    span.tag.is-success(v-if="contratacion.actual" :class= "[contratacion.status !=='ACTIVO' ? 'is-light' : '']")
+                    span.tag.is-primary(v-if="contratacion.actual" :class= "[contratacion.status !=='ACTIVO' ? 'is-light' : '']")
                         | {{ contratacion.status ==='ACTIVO' && contratacion.actual ? 'Actual' : 'Último' }}
                     span.tag.is-danger(v-if="contratacion.status === 'BAJA'") Baja
             button.card-header-icon(@click="toggleCard(contratacion.id)")
                 span.icon
                     span.material-icons keyboard_arrow_{{ contratacion.id === cardVisibleId ? 'up' : 'down' }}
                     
-        .card-content(v-if="contratacion.id === cardVisibleId")
+        .card-content
             .notification.is-info.is-light(v-if="contratacion.status === 'HISTORICO'")
                 .icon-text
                     span.icon.has-text-info
                         i.material-icons info
-                    span La información mostrada en esta sección forma parte del historial de contrataciones y no
+                    span La información mostrada en esta sección forma parte del historico de contrataciones y no
                         |  indica una relación laboral activa.
             button.button.is-pulled-right.is-white(title="Editar contratación" @click="toggleContratacionForm('editar', contratacion.id)")
                 span.icon.has-text-info
@@ -75,36 +75,45 @@ div
                                 span.material-icons add
                             span Nuevo movimiento
                     p.control
-                        button.button.is-info.is-outlined(title="Agregar puesto al historial" @click="toggleMovimientoForm(contratacion.id, 'historial')")
+                        button.button.is-info.is-outlined(title="Agregar puesto al historico" @click="toggleMovimientoForm(contratacion.id, 'historico')")
                             span.icon
                                 span.material-icons playlist_add
-                            span Historial
+                            span HISTORICO
             h4.title.is-4 Movimientos de puesto
             table.table.is-fullwidth.is-hoverable
                 thead
                     tr
                         th Núm.
                         th Adscripción
-                        th Función
+                        th Función real
+                        th Plaza tabular
                         th Periodo
                         th Acciones
                 tbody(v-if="contratacion.movimientos")
                     tr(v-for="(mov, index) in contratacion.movimientos")
+                        td.has-text-centered(:class="{'is-selected': mov.actual}") {{ index + 1 }}
+                            span.is-size-7(v-if="mov.actual")
+                                br
+                                | Actual
+                        td 
+                            p
+                                strong {{ mov.adscripcion.unidad_administrativa }} 
+                                span  / 
+                                | {{ mov.adscripcion.adscripcion }}
+                            p(v-if="mov.es_titular")
+                                i.icon.has-text-warning
+                                    span.material-icons.is-size-6 star
+                                i.has-text-grey Titular del área
                         td
-                            span.tag(:class="{'is-success': mov.actual}") {{ index + 1 }}
-                        td 
-                            p {{ mov.adscripcion.adscripcion }}
-                            strong {{ mov.adscripcion.unidad_administrativa }}
-                        td 
+                            | {{mov.funcion}}
+                        td
                             div(v-if="mov.plaza")
-                                p {{ mov.plaza.descripcion }}
                                 p
                                     strong {{ mov.codigo_plaza }}
-                                    span.has-text-grey-light /
+                                    span /
                                     strong {{ mov.codigo_tabulador }}
-                                p
-                                    span.is-size-7.has-text-grey(v-if="mov.funcion") {{mov.funcion? mov.funcion: 'Auxiliar administrativo'}}
-                            p(v-else)| {{ mov.funcion? mov.funcion: 'Auxiliar administrativo' }}
+                                p {{ mov.plaza.descripcion }}
+                            p(v-else)| {{ mov.funcion? mov.funcion: '--' }}
                         td
                             strong De
                             span : {{ mov.fecha_inicio }}
@@ -122,14 +131,14 @@ div
                                     p.control                               
                 
             .notification.is-warning.is-light.has-text-centered(v-if="contratacion.movimientos.length === 0")
-                p Sin historial registrado.
+                p Sin historico registrado.
                 button.button.is-danger(@click="deleteContratacion(contratacion.id)")
                     span.icon
                         span.material-icons delete
                     span Eliminar contratación
 
     .notification.is-warning.is-light.has-text-centered(v-else)
-         p.m-6 Sin historial.
+         p.m-6 Sin historico.
          button.button.is-danger(@click="deletePersonal(personal.rfc)")
                     span.icon
                         span.material-icons person_remove
@@ -153,14 +162,14 @@ div
                             .column
                                 p Tipo de contratación:
                                 b {{ _contratacion.tipo_contratacion }}
-                            .column(v-if="_contratacion && contratacion.status ==='BAJA'")
+                            .column(v-if="_contratacion && contratacion.status ==='PRE_BAJA'")
                                 p Núm. empleado:
                                 b {{ _contratacion.numero_empleado }}
-                            .column(v-if="_contratacion && contratacion.status ==='BAJA'")
+                            .column(v-if="_contratacion && contratacion.status ==='PRE_BAJA'")
                                 p Inicio:
                                 b {{ _contratacion.fecha_inicio }}
 
-                div(v-if="contratacion.status !== 'BAJA'")
+                div(v-if="contratacion.status !== 'PRE_BAJA'")
                     .columns
                         LayoutControl(label="Tipo de contratación*" v-if="!contratacion.id")
                             .select
@@ -170,7 +179,7 @@ div
                             input.input(type="text" v-model="contratacion.numero_empleado")
                         LayoutControl(label="Fecha de inicio*" extraClass="is-4")
                             input.input(type="date" v-model="contratacion.fecha_inicio" required)
-                div(v-if="contratacion.status === 'BAJA' || contratacion.status === 'HISTORICO'")
+                div(v-if="contratacion.status === 'BAJA' || contratacion.status === 'PRE_BAJA' || contratacion.status === 'HISTORICO'")
                     .columns
                         LayoutControl(label="Fecha de baja*" extraClass="is-4")
                             input.input(type="date" v-model="contratacion.fecha_baja" required)
@@ -205,21 +214,30 @@ div
                 .columns
                     LayoutControl(label="Fecha de inicio*" extraClass="is-6")
                         input.input(type="date" required v-model="movimiento.fecha_inicio")
-                    LayoutControl(label="Fecha de baja*" v-if="movimiento.status === 'HISTORIAL' || movimiento.status === 'BAJA'" extraClass="is-6")
+                    LayoutControl(label="Fecha de baja*" v-if="movimiento.status === 'HISTORICO' || movimiento.status === 'BAJA' || movimiento.status === 'PRE_BAJA'" extraClass="is-6")
                         input.input(type="date" required v-model="movimiento.fecha_baja")
                 .columns 
                     LayoutControl(label="Adscripción*")
                         .select
                             select(required v-model="movimiento.adscripcion_id")
                                 option(v-for="_ad in catalogos.adscripciones" :value="_ad.id") {{ _ad.unidad_administrativa }} - {{ _ad.adscripcion }}
+                    .column
+                        .field
+                            label.label Es titular
+                            input(type="checkbox" v-model="movimiento.es_titular")
+                .columns
+                    LayoutControl(label="Función real o actividad que desempeña*")
+                        .select
+                            select(v-model="movimiento.funcion" required)
+                                option(v-for="_fun in catalogos.funcion" :value="_fun") {{ _fun }}
+                    LayoutControl(label="Especifique la función*" v-if="movimiento.funcion === 'OTRA'")
+                        input.input(type="text" required v-model="otra_funcion")
+                                   
                 .columns(v-if="_contratacion && (_contratacion.tipo_contratacion==='BASE' || _contratacion.tipo_contratacion === 'CONFIANZA')")
-                    LayoutControl(label="Puesto*")
+                    LayoutControl(label="Puesto tabular*")
                         .select
                             select(required v-model="movimiento.codigo_plaza")
                                 option(v-for="_pl in catalogos.plazas" :value="_pl.codigo_plaza") {{ _pl.codigo_plaza }} - {{ _pl.descripcion }}
-                .columns
-                    LayoutControl(label="Función*")
-                        input.input(type="text" v-model="movimiento.funcion" placeholder="Función real, actividad que desempleña o puesto")
                 | {{ movimiento }}
             template(#modal-foot)
                 button.button.is-primary(type="submit" :class="{'is-loading':isSaving}")
@@ -234,7 +252,7 @@ div
 
 </template>
 <script setup lang="ts">
-import { ref, watch, reactive, computed } from 'vue'
+import { ref, toRaw , reactive, computed } from 'vue'
 import LayoutControl from "@/components/utils/LayoutControl.vue"
 import ModalCard from "@/components/utils/ModalCard.vue"
 import { useCatalogoStore } from "@/stores/catalogo"
@@ -253,6 +271,7 @@ const textBtnGuardarContratacion = ref('Guardar')
 
 
 const selectedMovimiento = ref(0)
+const otra_funcion = ref('')
 const modalMovimientoIsOpen = ref(false)
 const MovimientoEditMode = ref(false)
 const tituloModalMovimiento = ref('Editar')
@@ -267,6 +286,8 @@ let params = {}
 const http= useHttp()
 const router = useRouter()
 const isSaving = ref(false)
+
+const _funcion = computed(() => toRaw(useCatalogoStore().catalogos.funcion))
 
 const emit = defineEmits<{
   (event: 'updatePersonal'): void
@@ -311,6 +332,16 @@ const toggleMovimientoForm = (contratacion_id:number, mode:string, movId:number 
     selectedContratacion.value = contratacion_id
     selectedMovimiento.value = movId
     movimiento.value = {..._movimiento.value}
+
+    // checa el valor para "otra funcion"
+    console.log(_funcion.value.includes(movimiento.value.funcion))
+    if(_funcion.value.includes(movimiento.value.funcion)){
+        otra_funcion.value = ''
+    } else {
+        otra_funcion.value = movimiento.value.funcion
+        movimiento.value.funcion = 'OTRA'
+    }
+
     clearMovimientoProps()
     textBtnGuardarMovimiento.value = 'Registrar'
     switch (mode) {
@@ -322,7 +353,7 @@ const toggleMovimientoForm = (contratacion_id:number, mode:string, movId:number 
                 actual: _contratacion.value.status === 'ACTIVO' ? 1 :0
             }
             break
-        case 'historial':
+        case 'historico':
             tituloModalMovimiento.value = 'Agregar movimiento al historial'
             movimiento.value = {contratacion_id:contratacion_id, status:'HISTORICO', actual: 0}
             break
@@ -333,7 +364,7 @@ const toggleMovimientoForm = (contratacion_id:number, mode:string, movId:number 
             break
         case 'baja':
             tituloModalMovimiento.value = 'Finalizar puesto'
-            movimiento.value.status = 'BAJA'
+            movimiento.value.status = 'PRE_BAJA'
             textBtnGuardarMovimiento.value = 'Registrar baja'
             break
     }
@@ -348,9 +379,11 @@ const editMovimiento =  (mov:object):void => {
 
 const persistMov = async (id:number, params:object) => {
     const query = id? http!.patch('movimiento/'+id, params) : http!.post('movimiento/', params)
+    let message = (id? 'Se actualizó ' : 'Se registró ') + 'correctamente'
     await query.then(() => {
         toggleForm()
         emit('updatePersonal')
+        toast.success(message)
 
     })
 }
@@ -366,7 +399,7 @@ const toggleContratacionForm = (mode: string, contratacion_id:number = 0) => {
     switch(mode){
         case 'baja':
             tituloModalContratacion.value = 'Baja de contratación actual'
-            contratacion.value.status = 'BAJA'
+            contratacion.value.status = 'PRE_BAJA'
             textBtnGuardarContratacion.value = 'Registrar baja'
             
             break
@@ -445,6 +478,11 @@ const guardarMovimiento = async (event:Event) => {
     let params = {movimiento: movimiento.value} as {movimiento: Movimiento, anterior?:number}
     let id = movimiento.value.id ? movimiento.value.id : 0
     delete params.movimiento.id
+    // valida otra funcion
+    if(params.movimiento.funcion === 'OTRA'){
+        params.movimiento.funcion = otra_funcion.value
+    }
+    
     persistMov(id, params)
 }
 

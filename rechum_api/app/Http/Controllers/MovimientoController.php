@@ -33,14 +33,15 @@ class MovimientoController extends Controller
         $params = $request->input('movimiento');
         $params['funcion'] = strtoupper($params['funcion']);
         $movimiento = Movimiento::create($params);
-        $actuales = Movimiento::where('contratacion_id', $movimiento->contratacion_id)->where('actual', 1)->get();
-        // se desactiva el puesto actual anterior
-        foreach($actuales as $mov) {
-            $mov->actual = false;
-            $mov->save();
-        }
         $movimiento->save();
+
         if( $movimiento->status === 'NUEVO' ) {
+            // se desactiva el puesto actual anterior
+            $actuales = Movimiento::where('contratacion_id', $movimiento->contratacion_id)->where('actual', 1)->get();
+            foreach($actuales as $mov) {
+                $mov->actual = false;
+                $mov->save();
+            }
             $movimiento->status = 'ACTIVO';
             $movimiento->actual = true;
             $movimiento->save();

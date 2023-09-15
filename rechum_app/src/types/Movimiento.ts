@@ -9,5 +9,7 @@ export type Movimiento = {
     created_at?:Date,
     updated_at?:Date,
     plaza?: object,
-    adscripcion?: object
+    adscripcion?: object,
+    function?: string,
+    es_titular?:boolean
 }

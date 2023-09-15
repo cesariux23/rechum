@@ -14,6 +14,7 @@
             input.input(placeholder="Búsqueda por nombre completo o RFC" @keyup.enter="buscarPersonal" v-model="search")
 
     div.notification.is-info(v-if="!isLoading && isSearching && searchQuery && lista_personal.data.length > 0")
+        RouterLink.delete(:to="{name: 'ListaPersonal'}")
         span Se encontr{{ lista_personal.data.length>1? 'aron':'ó' }} &nbsp;
             strong {{ pagination_data.total }}&nbsp;
             | resultado{{ lista_personal.data.length>1? 's':'' }} 
@@ -59,6 +60,7 @@
             .hero-body
                 p.subtitle Cargando ...
     div.notification.is-light.is-warning(v-if="!isLoading & lista_personal.data.length === 0")
+        RouterLink.delete(:to="{name: 'ListaPersonal'}")
         span.is-size-4(v-if="search") No se encontraron resultados para "
             strong {{ searchQuery }}
             | ".

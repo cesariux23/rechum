@@ -35,8 +35,9 @@ const links= ref([] as Array<Number>)
 let query = {}
 
 const changePage = (page:number) => {
+    const query = {...route.query}
+    query.page = page
     if(page> 0 && page <= props.pagination_data.last_page)
-        query = {query: route.query, page}
         router.replace({path: route.path, query: query})
 }
 onMounted(()=>{

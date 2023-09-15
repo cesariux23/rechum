@@ -29,7 +29,9 @@ class Contratacion extends Model
 
     public function movimientos(): HasMany
     {
-        return $this->hasMany(Movimiento::class);
+        return $this->hasMany(Movimiento::class)
+            ->orderBy('actual','desc')
+            ->orderBy('fecha_inicio','desc');
     }
 
     public function puesto(): Attribute

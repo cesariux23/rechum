@@ -22,12 +22,15 @@ class Movimiento extends Model
         'zona_economica',
         'status',
         'actual',
+        'es_titular',
+        //
         'interinato',
         'comisionado',
     ];
 
     protected $casts = [
-        'interinato' => 'boolean',
+        'actual' => 'boolean',
+        'es_titular' => 'boolean',
     ];
     
     public function adscripcion(): BelongsTo

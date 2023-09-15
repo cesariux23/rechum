@@ -17,6 +17,7 @@ return new class extends Migration
             $table->increments('id');
             $table->integer('contratacion_id');
             $table->integer('adscripcion_id');
+            $table->boolean('es_titular')->default(false);
             $table->string('codigo_plaza', 15)->nullable();
             $table->string('codigo_tabulador', 15)->nullable();;
             $table->date('fecha_inicio');

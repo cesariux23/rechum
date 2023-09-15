@@ -21,7 +21,8 @@ class CatalogosSeeder extends Seeder
                 "sexo":[{"key":"M","value":"MUJER"},{"key":"H","value":"HOMBRE"}, {"key":"X","value":"NO BINARIO"}],
                 "tipo_contratacion":[{"key":"ASIMILADO","value":"ASIMILADO A SALARIOS"},{"key":"CONFIANZA","value":"CONFIANZA"}, {"key":"BASE","value":"BASE"}],
                 "status":[{"key":"ACTIVO","value":"ACTIVO"},{"key":"BAJA","value":"BAJA"}],
-                "status_movimiento":[{"key":"ACTIVO","value":"ACTIVO"},{"key":"HISTORICO","value":"HISTORICO"}]      
+                "status_movimiento":[{"key":"ACTIVO","value":"ACTIVO"},{"key":"HISTORICO","value":"HISTORICO"}],   
+                "funcion":["DIRECTOR(A) GENERAL","SUBDIRECTOR(A)", "COORDINADOR(A) DE ZONA", "JEFE(A) DE DEPARTAMENTO","TECNICO DOCENTE", "AUXILIAR ADMINSTRATIVO", "AUXILIAR GENERAL", "OTRO"]
             }');
         foreach($values as $cat => $items) {
             Catalogo::insert([
