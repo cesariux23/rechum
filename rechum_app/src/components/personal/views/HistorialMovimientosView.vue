@@ -238,7 +238,6 @@ div
                         .select
                             select(required v-model="movimiento.codigo_plaza")
                                 option(v-for="_pl in catalogos.plazas" :value="_pl.codigo_plaza") {{ _pl.codigo_plaza }} - {{ _pl.descripcion }}
-                | {{ movimiento }}
             template(#modal-foot)
                 button.button.is-primary(type="submit" :class="{'is-loading':isSaving}")
                     span.icon

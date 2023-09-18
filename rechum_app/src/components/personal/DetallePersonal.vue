@@ -1,21 +1,25 @@
 <template lang="pug">
 .app-module
-    .columns
-        .column
-            h2.title.is-2 {{ personal.nombre_completo}} 
-                span.tag.is-danger(v-if="personal.status ==='BAJA'") Baja
-                span.tag.is-primary(v-if="personal.status ==='ACTIVO'") Activo
-                span.tag.is-warning(v-if="personal.status ==='SIN ASIGNAR'") Sin asignar
-        .column.is-1.is-right
-            BackButton
-    .tabs
-        ul
-            li(:class="{'is-active':route.name === 'HistorialLaboral'}")
-                RouterLink(:to="{name:'HistorialLaboral'}") Contratatación
-            li(:class="{'is-active':route.name === 'DatosPersonales'}")
-                RouterLink(:to="{name:'DatosPersonales'}") Datos personales
+    div(v-if="isLoading")
+        | Cargando ..
 
-    RouterView(:personal='personal' @update-personal="updatePersonal")
+    div(v-else)
+        .columns
+            .column
+                h2.title.is-2 {{ personal.nombre_completo}} 
+                    span.tag.is-danger(v-if="personal.status ==='BAJA'") Baja
+                    span.tag.is-primary(v-if="personal.status ==='ACTIVO'") Activo
+                    span.tag.is-warning(v-if="personal.status ==='SIN ASIGNAR'") Sin asignar
+            .column.is-1.is-right
+                BackButton
+        .tabs
+            ul
+                li(:class="{'is-active':route.name === 'HistorialLaboral'}")
+                    RouterLink(:to="{name:'HistorialLaboral'}") Contratatación
+                li(:class="{'is-active':route.name === 'DatosPersonales'}")
+                    RouterLink(:to="{name:'DatosPersonales'}") Datos personales
+    
+        RouterView(:personal='personal' @update-personal="updatePersonal")
 </template>
 <script setup lang="ts">
 import { ref } from "vue"
@@ -29,9 +33,11 @@ const http= useHttp()
 const route = useRoute()    
 const router = useRouter()
 const personal = ref({contrataciones:[]})
+const isLoading = ref(false)
 
 const updatePersonal = async () => {
     try {
+        isLoading.value = true
         const response = await http!.get('personal/'+route.params.rfc)
         personal.value = response.data 
     } catch (error){
@@ -39,6 +45,9 @@ const updatePersonal = async () => {
         console.error(error)
         //regresa al punto anterior
         router.push({name:'ListaPersonal'})
+    }
+    finally {
+        isLoading.value = false
     }
 }
 
